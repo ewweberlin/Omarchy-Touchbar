@@ -1,10 +1,10 @@
 # Touch Bar for Omarchy
 
 ![Touch Bar for Omarchy — the Home, Controls, Windows and Vitals strips](preview.png)
-<br><br>
+
 
 ☕ **If you like this project, buy me a coffee** → [paypal.me](https://paypal.me/EwgeniWeber)
-<br><br>
+
 
 A theme-aware control strip that turns the Touch Bar of an Intel/T2 MacBook
 into a useful part of an [Omarchy](https://omarchy.org/) desktop: workspaces,
@@ -43,8 +43,7 @@ nothing to style by hand.
   its app icon. Tap a card to focus it, drag the row to scroll, tap outside or
   wait eight seconds to close.
 - **Controls drawer**: brightness and volume side-by-side, each with tick marks
-  and a macOS-style percentage readout, plus a mute toggle. Side by side because
-  the digitizer only reports x; two stacked rows could not be told apart.
+  and a macOS-style percentage readout, plus a mute toggle.
 - **System vitals**: CPU temperature + usage, GPU clock + usage, RAM, fan and
   network in two compact stacks. Tap the block for six large cards (adds disk
   usage and free space).
@@ -53,11 +52,7 @@ nothing to style by hand.
 - **Theme live**: colours come from Omarchy's `colors.toml`; the theme-set hook
   asks the daemon to repaint as soon as a theme is applied.
 - **Theme and wallpaper pickers**: the Theme and Wallpaper buttons run the same
-  commands as Omarchy's own menu, so picking an entry applies it right away
-  (Omarchy's picker scripts only print their selection; the caller applies it).
-
-The touch targets are the same rectangles the renderer draws, so a button and
-its hit zone cannot drift apart.
+  commands as Omarchy's own menu, so picking an entry applies it right away.
 
 ## Requirements
 
@@ -71,6 +66,28 @@ plugin: a QML supervisor keeps a Python daemon alive, and the daemon publishes
 SVG frames plus tiny-dfr's config. There is no bar widget.
 
 ## Installation
+
+### The Omarchy way
+
+```sh
+omarchy plugin add https://github.com/ewweberlin/Omarchy-Touchbar.git --enable
+cd ~/.config/omarchy/plugins/ewweberlin.touchbar
+bin/install
+```
+
+Running `bin/install` from the cloned plugin directory is still required for the
+hook, udev rule and `/etc/tiny-dfr` permissions.
+
+### After installing tiny-dfr
+
+Installing tiny-dfr re-enumerates the Touch Bar USB device. If the digitizer node
+does not appear after a re-login, **reboot**. Then check:
+
+```sh
+ls -l /dev/input/event* | grep -i touch
+omarchy plugin list
+journalctl --user -u omarchy-shell -f | grep -i touchbar
+```
 
 ### From a checkout
 
@@ -100,28 +117,6 @@ plan without changing anything, or `--link` to symlink this checkout instead of
 copying it (handy while developing the daemon; validation then checks the
 checkout itself, since the validator refuses the symlinked folder).
 
-### The Omarchy way
-
-```sh
-omarchy plugin add https://github.com/ewweberlin/Omarchy-Touchbar.git --enable
-cd ~/.config/omarchy/plugins/ewweberlin.touchbar
-bin/install
-```
-
-Running `bin/install` from the cloned plugin directory is still required for the
-hook, udev rule and `/etc/tiny-dfr` permissions.
-
-### After installing tiny-dfr
-
-Installing tiny-dfr re-enumerates the Touch Bar USB device. If the digitizer node
-does not appear after a re-login, **reboot**. Then check:
-
-```sh
-ls -l /dev/input/event* | grep -i touch
-omarchy plugin list
-journalctl --user -u omarchy-shell -f | grep -i touchbar
-```
-
 ## Using it
 
 | Where | Tap | Drag |
@@ -135,14 +130,6 @@ journalctl --user -u omarchy-shell -f | grep -i touchbar
 
 Anywhere in a drawer, tapping outside the drawer or waiting eight seconds
 returns to the home strip. Drawer idle-close can be disabled in the settings.
-
-Home strip order:
-
-```
-[MENU] [1] [2] [3] [4] [5] [Terminal] [Browser] [Files] [Shot]
-       [Clipboard] [Dictate] [Theme] [Wallpaper] [CPU/GPU | RAM/FAN/NET]
-       [brightness ─●──] [volume ─●──] [mute] [∧]
-```
 
 Holding **Fn** switches tiny-dfr to its normal function-key layer. The daemon
 stops publishing while Fn is held, because a tiny-dfr config reload would force
@@ -254,9 +241,6 @@ internal keyboard (which carries Fn) to the installing user as `OWNER`,
 | Network | default-route interface `rx_bytes`/`tx_bytes` delta |
 | Disk (vitals drawer) | `statvfs("/")` |
 
-**There is no GPU temperature on the 13″ model.** It has no dGPU and the SMC
-exposes no GPU sensor, so the GPU row shows clock and usage instead. Do not
-invent a number.
 
 ### Repository layout
 
@@ -297,9 +281,6 @@ for a publish-permission error.
 The digitizer node is not readable by your user. Check
 `ls -l /dev/input/event*`; the Touch Bar node should be owned by you with mode
 `0660`. Re-run `bin/install` and `sudo udevadm trigger --subsystem-match=input`.
-
-**Taps are mirrored or offset.**
-See [Touch calibration](#touch-calibration).
 
 **A button never reacts, but brightness and volume do.**
 Run the daemon in the foreground to see every touch coordinate and where it
@@ -343,25 +324,9 @@ leaves the `tiny-dfr` package, `/usr/share/tiny-dfr`, your settings file and a
 git-managed plugin directory (remove that with
 `omarchy plugin remove ewweberlin.touchbar`).
 
-## Development
-
-`daemon/preview.py` renders every state with fake data, so the look can be
-iterated without a Touch Bar:
-
-```sh
-python3 -m daemon.preview --out preview --scale 2
-```
-
-The images in `docs/screenshots/` come from that command.
-
-A normal `bin/install` copies the runtime files, so re-run it after changing
-the daemon. `bin/install --link --no-system` symlinks the checkout instead:
-edits are live, at the cost of `omarchy plugin validate` rejecting the symlinked
-folder (the install script validates the checkout itself in that mode).
-
 ## Credits
 
-The macOS-style slider language and the general idea of a Touch Bar control
+The macOS-style slider and Touch Bar control
 strip were adapted from **[niraj-envision/touch-bar](https://github.com/niraj-envision/touch-bar)**
 by Niraj Kumar Dahal, MIT licensed. This project is a Python/Omarchy rewrite:
 the layout, renderer, input path, theme loading, Hyprland integration and
