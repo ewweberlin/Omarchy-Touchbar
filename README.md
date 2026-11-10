@@ -371,5 +371,5 @@ The rendering path relies on **tiny-dfr** by the arch-mact2 project.
 
 ## License
 
-MIT. Copyright © 2026 ewweberlin. Third-party notices are in
+MIT. Copyright © 2026 Ewgeni Weber. Third-party notices are in
 [`LICENSE`](LICENSE).
