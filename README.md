@@ -1,12 +1,10 @@
 # Touch Bar for Omarchy
 
 ![Touch Bar for Omarchy — the Home, Controls, Windows and Vitals strips](preview.png)
-
-
 <br><br>
 
 ☕ **If you like this project, buy me a coffee** → [paypal.me](https://paypal.me/EwgeniWeber)
-
+<br><br>
 
 A theme-aware control strip that turns the Touch Bar of an Intel/T2 MacBook
 into a useful part of an [Omarchy](https://omarchy.org/) desktop: workspaces,
