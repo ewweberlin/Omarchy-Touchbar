@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "ewweberlin.touchbar",
+  "name": "Omarchy Touchbar",
+  "version": "0.1.0",
+  "author": "ewweberlin",
+  "license": "MIT",
+  "description": "Theme-aware control strip for Intel/T2 MacBook Touch Bars: workspaces, quick actions, live system vitals and macOS-style brightness/volume sliders. Rendered through tiny-dfr.",
+  "kinds": ["service"],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml"
+  },
+  "service": {
+    "displayName": "Omarchy Touchbar",
+    "description": "Touch Bar control strip for T2 Macs",
+    "category": "Desktop",
+    "allowMultiple": false
+  }
+}
