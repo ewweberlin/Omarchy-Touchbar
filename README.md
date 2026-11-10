@@ -54,6 +54,16 @@ nothing to style by hand.
 - **Theme and wallpaper pickers**: the Theme and Wallpaper buttons run the same
   commands as Omarchy's own menu, so picking an entry applies it right away.
 
+## Themes
+
+Colours come from the active theme's `colors.toml`, so the strip repaints to
+match whichever Omarchy theme is applied. The home strip in all 25 themes
+installed here (file names match the slug used by `omarchy-theme-set`):
+
+![The home strip rendered in every installed Omarchy theme](docs/screenshots/themes.png)
+
+Individual strips are in [`docs/screenshots/themes/`](docs/screenshots/themes).
+
 ## Requirements
 
 - Omarchy with the Quickshell shell (`omarchy-shell`) on Hyprland

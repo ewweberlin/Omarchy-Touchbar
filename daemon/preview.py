@@ -1,12 +1,17 @@
 """Render every strip state with fake data, for looking at before hardware.
 
     python3 -m daemon.preview [--out preview] [--scale 2]
+    python3 -m daemon.preview --themes [--out preview/themes]
+
+--themes renders the home strip once per installed theme, so a palette change
+can be checked without switching the desktop theme 25 times.
 """
 
 from __future__ import annotations
 
 import argparse
 import subprocess
+import tempfile
 from pathlib import Path
 
 from .config import CANVAS_H, CANVAS_W, load_settings
@@ -14,6 +19,11 @@ from .icons import IconResolver
 from .render import Model, Renderer
 from .stats import Sample
 from .theme import load_palette
+
+THEME_ROOTS = (
+    Path("/usr/share/omarchy/themes"),
+    Path.home() / ".config/omarchy/themes",
+)
 
 FAKE_STATS = Sample(
     cpu_pct=23.0,
@@ -100,15 +110,68 @@ def models(icons: IconResolver) -> dict[str, Model]:
     }
 
 
+def theme_palettes() -> dict[str, Path]:
+    """Slug -> colors.toml for every installed theme, user themes last."""
+    found: dict[str, Path] = {}
+    for root in THEME_ROOTS:
+        for colors in sorted(root.glob("*/colors.toml")):
+            if colors.is_file():
+                found[colors.parent.name] = colors
+    return dict(sorted(found.items()))
+
+
+def render_themes(out: Path, scale: float, settings: dict) -> int:
+    home = models(IconResolver())["home"]
+    out.mkdir(parents=True, exist_ok=True)
+    palettes = theme_palettes()
+    if not palettes:
+        print("no themes found")
+        return 1
+    with tempfile.TemporaryDirectory() as tmp:
+        for slug, colors in palettes.items():
+            svg = Renderer(load_palette(colors), settings["font_family"]).render(home)
+            svg_path = Path(tmp) / f"{slug}.svg"
+            svg_path.write_text(svg, encoding="utf-8")
+            png_path = out / f"{slug}.png"
+            try:
+                subprocess.run(
+                    [
+                        "rsvg-convert",
+                        "-w",
+                        str(int(CANVAS_W * scale)),
+                        "-h",
+                        str(int(CANVAS_H * scale)),
+                        "-o",
+                        str(png_path),
+                        str(svg_path),
+                    ],
+                    check=True,
+                    capture_output=True,
+                )
+            except (OSError, subprocess.CalledProcessError) as exc:
+                print(f"{slug}: skipped ({exc})")
+                continue
+            print(png_path)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="daemon.preview")
-    parser.add_argument("--out", default="preview")
+    parser.add_argument("--out", default=None)
     parser.add_argument("--scale", type=float, default=2.0)
+    parser.add_argument(
+        "--themes",
+        action="store_true",
+        help="render the home strip once per installed theme",
+    )
     args = parser.parse_args(argv)
 
-    out = Path(args.out)
-    out.mkdir(parents=True, exist_ok=True)
     settings = load_settings()
+    if args.themes:
+        return render_themes(Path(args.out or "preview/themes"), args.scale, settings)
+
+    out = Path(args.out or "preview")
+    out.mkdir(parents=True, exist_ok=True)
     palette = load_palette()
     renderer = Renderer(palette, settings["font_family"])
     icons = IconResolver()
