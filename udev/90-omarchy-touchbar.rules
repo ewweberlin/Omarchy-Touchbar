@@ -1,0 +1,11 @@
+# Hand the Touch Bar digitizer and the internal keyboard to the desktop user.
+#
+# The digitizer is moved to seat-touchbar by tiny-dfr, so logind's uaccess ACL
+# never applies to it. The internal keyboard is included because the Fn key is
+# read from it directly (its capability bitmap often omits KEY_FN, so there is
+# no other way to tell which event node is the built-in one).
+#
+# bin/install replaces @USER@ with the installing account.
+
+SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="Apple Inc. Touch Bar Display Touchpad", OWNER="@USER@", GROUP="input", MODE="0660"
+SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="Apple Inc. Apple Internal Keyboard / Trackpad", OWNER="@USER@", GROUP="input", MODE="0660"

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Omarchy theme-set hook for ewweberlin.touchbar: ask the Touch Bar daemon to
+# repaint immediately.
+#
+# The daemon already notices a swapped colors.toml by stat()ing it, but this
+# makes the switch instant even when the loop is in its slow idle poll.
+set -euo pipefail
+
+runtime="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/omarchy-touchbar"
+mkdir -p "$runtime"
+: >"$runtime/refresh"

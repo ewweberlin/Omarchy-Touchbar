@@ -1,0 +1,371 @@
+#!/usr/bin/env bash
+# Install the Touch Bar plugin and the system bits it needs.
+#
+# The plugin itself is user-level: a copy of the manifest, the service and
+# daemon/ into Omarchy's plugin directory, plus an entry in shell.json.
+# tiny-dfr and the Touch Bar device nodes are system level, so those steps use
+# sudo. Re-run after installing tiny-dfr; every step is idempotent.
+#
+# The plugin is copied rather than symlinked on purpose: `omarchy plugin
+# validate` (and therefore anything that installs plugins) refuses symlinks
+# inside a plugin folder. --link keeps a symlink for hacking on the daemon,
+# accepting that validation will complain about it.
+set -euo pipefail
+cd -- "$(dirname -- "$0")/.."
+
+REPO=$(pwd -P)
+PLUGIN_ID="ewweberlin.touchbar"
+CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+PLUGINS_DIR="${OMARCHY_PLUGINS_DIR:-$CONFIG_HOME/omarchy/plugins}"
+PLUGIN_DIR="$PLUGINS_DIR/$PLUGIN_ID"
+HOOKS_DIR="${OMARCHY_HOOKS_DIR:-$CONFIG_HOME/omarchy/hooks}/theme-set.d"
+SHELL_JSON="${OMARCHY_SHELL_JSON:-$CONFIG_HOME/omarchy/shell.json}"
+UDEV_RULE=/etc/udev/rules.d/90-omarchy-touchbar.rules
+TINY_DFR_DIR=/etc/tiny-dfr
+TINY_DFR_BASE=/usr/share/tiny-dfr/config.toml
+
+DRY_RUN=0
+SYSTEM=1
+LINK=0
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=1 ;;
+    --no-system) SYSTEM=0 ;;
+    --link) LINK=1 ;;
+    -h | --help)
+      cat <<'EOF'
+Usage: bin/install [--dry-run] [--no-system] [--link]
+
+  --dry-run    print what would change, touch nothing
+  --no-system  only install the user-level plugin (no sudo)
+  --link       symlink this checkout instead of copying it (development)
+EOF
+      exit 0
+      ;;
+    *)
+      echo "install: unknown option: $arg" >&2
+      exit 2
+      ;;
+  esac
+done
+
+say() { printf '==> %s\n' "$*"; }
+warn() { printf 'warning: %s\n' "$*" >&2; }
+die() {
+  printf 'error: %s\n' "$*" >&2
+  exit 1
+}
+
+run() {
+  if ((DRY_RUN)); then
+    printf '+ '
+    printf '%q ' "$@"
+    printf '\n'
+  else
+    "$@"
+  fi
+}
+
+as_root() {
+  if ((DRY_RUN)); then
+    printf '+ sudo '
+    printf '%q ' "$@"
+    printf '\n'
+  else
+    sudo "$@"
+  fi
+}
+
+# ---------------------------------------------------------------- preflight --
+say "checking the host"
+
+[[ -f manifest.json && -f Service.qml && -f daemon/__main__.py ]] ||
+  die "run this from the repository checkout (manifest.json is missing)"
+
+command -v python3 >/dev/null || die "python3 is required"
+python3 - <<'PY' || die "Python 3.11+ is required (tomllib)"
+import sys
+import tomllib  # noqa: F401
+sys.exit(0 if sys.version_info >= (3, 11) else 1)
+PY
+
+for tool in rsvg-convert brightnessctl pactl hyprctl omarchy; do
+  command -v "$tool" >/dev/null || warn "$tool is missing; some features will not work"
+done
+
+if ! pacman -Q tiny-dfr >/dev/null 2>&1; then
+  warn "tiny-dfr is not installed. The strip cannot appear until it is:"
+  warn "    sudo pacman -S tiny-dfr"
+  warn "Then re-run bin/install so the permissions and udev rule are applied."
+fi
+
+# ------------------------------------------------------------------- plugin --
+say "installing the plugin into $PLUGINS_DIR"
+
+if [[ -L "$PLUGIN_DIR" ]]; then
+  existing=$(readlink -f "$PLUGIN_DIR" 2>/dev/null || true)
+  if [[ $existing != "$REPO" ]]; then
+    die "$PLUGIN_DIR is a symlink to $existing, not this checkout.
+Remove it first (omarchy plugin remove $PLUGIN_ID)."
+  fi
+  # A real copy is the default because validate rejects symlinked plugin
+  # folders; --link keeps the old development behaviour.
+  if ((LINK == 0)); then
+    run rm -f "$PLUGIN_DIR"
+  fi
+elif [[ -d "$PLUGIN_DIR" ]]; then
+  if [[ -d "$PLUGIN_DIR/.git" && $(readlink -f "$PLUGIN_DIR") != "$REPO" ]]; then
+    die "$PLUGIN_DIR is a git checkout of this plugin.
+Update it with 'omarchy plugin update $PLUGIN_ID', or remove it first."
+  fi
+  installed_id=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("id", ""))' \
+    "$PLUGIN_DIR/manifest.json" 2>/dev/null || true)
+  if [[ $installed_id != "$PLUGIN_ID" ]]; then
+    die "$PLUGIN_DIR exists and does not belong to $PLUGIN_ID.
+Remove it first (omarchy plugin remove $PLUGIN_ID)."
+  fi
+fi
+
+if ((LINK)); then
+  if [[ ! -L "$PLUGIN_DIR" ]]; then
+    run mkdir -p "$PLUGINS_DIR"
+    run ln -s "$REPO" "$PLUGIN_DIR"
+  fi
+else
+  # A plugin folder that *is* this checkout (cloned straight into the plugin
+  # directory) is already installed; anything else gets a fresh copy.
+  in_place=0
+  if [[ ! -L "$PLUGIN_DIR" && -d "$PLUGIN_DIR" ]] &&
+    [[ $(readlink -f "$PLUGIN_DIR") == "$REPO" ]]; then
+    in_place=1
+  fi
+  if ((in_place == 0)); then
+    # Copy only the runtime files. .git, tests/, preview/ and hooks/ are not
+    # loaded by the shell and would only add noise to the plugin folder.
+    if ((DRY_RUN)); then
+      printf '+ python3 - %q %q  # copy manifest, Service.qml, LICENSE, daemon/\n' "$REPO" "$PLUGIN_DIR"
+    else
+      python3 - "$REPO" "$PLUGIN_DIR" <<'PY'
+import os
+import shutil
+import sys
+
+src, dst = sys.argv[1], sys.argv[2]
+if os.path.realpath(src) == os.path.realpath(dst):
+    sys.exit(0)  # installed in place: nothing to copy
+
+os.makedirs(dst, exist_ok=True)
+for name in ("manifest.json", "Service.qml", "LICENSE"):
+    path = os.path.join(src, name)
+    if os.path.exists(path):
+        shutil.copy2(path, os.path.join(dst, name))
+
+daemon_src = os.path.join(src, "daemon")
+if os.path.isdir(daemon_src):
+    daemon_dst = os.path.join(dst, "daemon")
+    shutil.rmtree(daemon_dst, ignore_errors=True)
+    shutil.copytree(
+        daemon_src,
+        daemon_dst,
+        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+    )
+PY
+    fi
+  fi
+fi
+
+say "installing the theme hook"
+HOOK_SRC="$REPO/hooks/10-omarchy-touchbar"
+HOOK_DST="$HOOKS_DIR/10-omarchy-touchbar"
+HOOK_OWNED=1
+run mkdir -p "$HOOKS_DIR"
+if [[ -L $HOOK_DST ]]; then
+  if [[ $(readlink -f "$HOOK_DST") == "$HOOK_SRC" ]]; then
+    run rm -f "$HOOK_DST"
+  else
+    warn "$HOOK_DST points somewhere else; leaving it alone"
+    HOOK_OWNED=0
+  fi
+elif [[ -e $HOOK_DST ]] && ! grep -qF 'ewweberlin.touchbar' "$HOOK_DST"; then
+  warn "$HOOK_DST exists and is not ours; leaving it alone"
+  HOOK_OWNED=0
+fi
+if ((HOOK_OWNED)); then
+  run chmod +x hooks/10-omarchy-touchbar
+  if ((LINK)); then
+    run ln -sfn "$HOOK_SRC" "$HOOK_DST"
+  else
+    run install -m 0755 hooks/10-omarchy-touchbar "$HOOK_DST"
+  fi
+fi
+
+enable_with_json() {
+  python3 - "$SHELL_JSON" "$PLUGIN_ID" <<'PY'
+import json
+import os
+import sys
+import time
+
+path, plugin_id = sys.argv[1], sys.argv[2]
+try:
+    with open(path, encoding="utf-8") as handle:
+        data = json.load(handle)
+except FileNotFoundError:
+    data = {"version": 1, "plugins": []}
+except ValueError as exc:
+    sys.exit(f"{path}: not valid JSON: {exc}")
+
+if not isinstance(data, dict):
+    sys.exit(f"{path}: expected a JSON object")
+
+plugins = data.setdefault("plugins", [])
+if not isinstance(plugins, list):
+    sys.exit(f"{path}: plugins must be a list")
+
+if any(isinstance(entry, dict) and entry.get("id") == plugin_id for entry in plugins):
+    sys.exit(0)
+
+plugins.append({"id": plugin_id})
+backup = f"{path}.bak.{int(time.time())}"
+if os.path.exists(path):
+    with open(path, encoding="utf-8") as handle:
+        original = handle.read()
+    with open(backup, "w", encoding="utf-8") as handle:
+        handle.write(original)
+    mode = os.stat(path).st_mode & 0o777
+else:
+    mode = 0o600
+tmp = f"{path}.tmp.{os.getpid()}"
+with open(tmp, "w", encoding="utf-8") as handle:
+    json.dump(data, handle, indent=2)
+    handle.write("\n")
+os.chmod(tmp, mode)
+os.replace(tmp, path)
+print(f"enabled {plugin_id} in {path}" + (f" (backup: {backup})" if os.path.exists(backup) else ""))
+PY
+}
+
+say "enabling the plugin in the shell"
+need_restart=0
+
+# The shell rescan is asynchronous; on a busy session it can take a moment
+# before the plugin shows up in the registry. Retry briefly instead of editing
+# shell.json behind the shell's back.
+plugin_is_known() {
+  omarchy plugin list --json 2>/dev/null | grep -F "\"$PLUGIN_ID\"" >/dev/null
+}
+
+if ((DRY_RUN)); then
+  printf '+ omarchy-shell shell rescanPlugins\n'
+  printf '+ omarchy plugin enable %q\n' "$PLUGIN_ID"
+else
+  known=0
+  if command -v omarchy-shell >/dev/null 2>&1; then
+    for _ in 1 2 3 4 5; do
+      omarchy-shell shell rescanPlugins >/dev/null 2>&1 || true
+      if plugin_is_known; then
+        known=1
+        break
+      fi
+      sleep 0.4
+    done
+  fi
+  if ((known)); then
+    omarchy plugin enable "$PLUGIN_ID" || {
+      warn "omarchy plugin enable failed; editing shell.json directly"
+      enable_with_json
+      need_restart=1
+    }
+  else
+    warn "the running shell did not answer; editing shell.json directly"
+    enable_with_json
+    need_restart=1
+  fi
+fi
+
+if command -v omarchy >/dev/null 2>&1; then
+  if ((LINK)); then
+    # validate refuses the symlinked plugin folder itself; the files behind it
+    # are what the shell loads, so check the checkout instead.
+    run omarchy plugin validate "$REPO" || warn "manifest validation failed"
+  else
+    run omarchy plugin validate "$PLUGIN_DIR" || warn "manifest validation failed"
+  fi
+fi
+
+# ------------------------------------------------------------------- system --
+if ((SYSTEM)); then
+  say "installing system permissions and the udev rule"
+  if ((DRY_RUN)); then
+    as_root true
+  elif ! sudo -v; then
+    warn "sudo is unavailable; skipping system changes"
+    warn "re-run with a terminal that can prompt for sudo, or use --no-system"
+    SYSTEM=0
+  fi
+fi
+
+if ((SYSTEM)); then
+  # OWNER has to be a literal name in a udev rule. The digitizer lives on
+  # seat-touchbar, so logind never grants the session an ACL for it.
+  tmp_rule=$(mktemp)
+  trap 'rm -f "$tmp_rule"' EXIT
+  sed "s/@USER@/$(id -un)/g" udev/90-omarchy-touchbar.rules >"$tmp_rule"
+  as_root install -m 0644 -o root -g root "$tmp_rule" "$UDEV_RULE"
+  as_root udevadm control --reload-rules
+  as_root udevadm trigger --subsystem-match=input
+  rm -f "$tmp_rule"
+  trap - EXIT
+
+  if [[ -f $TINY_DFR_BASE ]] || [[ -d $TINY_DFR_DIR ]]; then
+    # The daemon publishes with tmp + rename, so it needs write access to the
+    # directory itself, not just the two files. tiny-dfr reads the files as
+    # root and renders the SVG as nobody, so 0644/0755 is enough.
+    as_root install -d -m 0755 -o "$(id -un)" "$TINY_DFR_DIR"
+    if [[ -f $TINY_DFR_BASE && ! -e "$TINY_DFR_DIR/config.toml" ]]; then
+      as_root install -m 0644 -o "$(id -un)" -g root "$TINY_DFR_BASE" "$TINY_DFR_DIR/config.toml"
+    fi
+    if [[ -e "$TINY_DFR_DIR/omarchy-touchbar.svg" ]]; then
+      as_root chown "$(id -un)" "$TINY_DFR_DIR/omarchy-touchbar.svg"
+      as_root chmod 0644 "$TINY_DFR_DIR/omarchy-touchbar.svg"
+    fi
+  else
+    warn "$TINY_DFR_DIR does not exist yet; install tiny-dfr and re-run bin/install"
+  fi
+
+  if systemctl list-unit-files tiny-dfr.service >/dev/null 2>&1; then
+    # enable --now aborts the whole script when the Touch Bar has not
+    # re-enumerated yet ("a dependency job failed"), which is normal before the
+    # first reboot after installing tiny-dfr. Enable it, then try to start it.
+    as_root systemctl enable tiny-dfr.service || warn "could not enable tiny-dfr.service"
+    as_root systemctl start tiny-dfr.service ||
+      warn "tiny-dfr.service cannot start yet; the Touch Bar device appears after a reboot"
+  fi
+fi
+
+# ------------------------------------------------------------------ summary --
+cat <<EOF
+
+Installed $PLUGIN_ID.
+  plugin:   $PLUGIN_DIR
+  hook:     $HOOK_DST
+  settings: $CONFIG_HOME/omarchy-touchbar/config.json (optional)
+EOF
+
+steps=0
+step() { ((steps++ == 0)) && printf '\nNext steps:\n'; printf '  * %s\n' "$1"; }
+
+if ((DRY_RUN == 0)) &&
+  ! grep -lqs 'Touch Bar Display Touchpad' /sys/class/input/event*/device/name 2>/dev/null; then
+  step "Reboot. tiny-dfr switches the Touch Bar into display mode on the next
+    boot; until then the digitizer node does not exist."
+fi
+if ((need_restart)); then
+  step "omarchy restart shell   # the shell edited shell.json behind its back"
+fi
+
+cat <<'EOF'
+
+Check the daemon log:
+  journalctl --user -u omarchy-shell -f | grep touchbar
+EOF

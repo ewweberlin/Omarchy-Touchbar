@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "ewweberlin.touchbar",
-  "name": "Omarchy Touchbar",
+  "name": "Touch Bar",
   "version": "0.1.0",
   "author": "ewweberlin",
   "license": "MIT",
@@ -12,7 +12,7 @@
     "service": "Service.qml"
   },
   "service": {
-    "displayName": "Omarchy Touchbar",
+    "displayName": "Touch Bar",
     "description": "Touch Bar control strip for T2 Macs",
     "category": "Desktop",
     "allowMultiple": false
