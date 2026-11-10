@@ -1,5 +1,7 @@
 # Touch Bar for Omarchy
 
+![Touch Bar for Omarchy — the Home, Controls, Windows and Vitals strips](preview.png)
+
 A theme-aware control strip that turns the Touch Bar of an Intel/T2 MacBook
 into a useful part of an [Omarchy](https://omarchy.org/) desktop: workspaces,
 quick actions, a window drawer, live system vitals and macOS-style brightness
