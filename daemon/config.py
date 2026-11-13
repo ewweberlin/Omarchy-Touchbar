@@ -83,6 +83,8 @@ DEFAULT_SETTINGS: dict = {
     "window_icons": True,
     # Text labels under the quick-action icons. Off gives larger icons.
     "action_labels": True,
+    # Icon size in px when action_labels is false (16-50).
+    "action_icon_size": 34,
     "font_family": "Adwaita Sans, Noto Sans, Liberation Sans, sans-serif",
     # How long the strip keeps sampling every second after the last touch
     # before dropping to a slow poll (and then stopping entirely).

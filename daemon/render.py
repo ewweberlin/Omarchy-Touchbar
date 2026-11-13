@@ -231,10 +231,18 @@ def _fmt_clock(mhz: float | None) -> str:
 
 
 class Renderer:
-    def __init__(self, palette: Palette, font_family: str, action_labels: bool = True):
+    def __init__(
+        self,
+        palette: Palette,
+        font_family: str,
+        action_labels: bool = True,
+        action_icon_size: float = 34,
+    ):
         self.p = palette
         self.font = font_family
         self.action_labels = action_labels
+        # Cells are 50 px tall; the glyphs fill ~75% of their box, so 50 still fits.
+        self.action_icon_size = max(16.0, min(50.0, float(action_icon_size)))
 
     # -- shared pieces -------------------------------------------------------
 
@@ -292,7 +300,7 @@ class Renderer:
             fg = p.on_accent if pressed else p.fg
             if not self.action_labels:
                 # No label: the icon gets the whole cell.
-                out.append(icon(name, rect_.cx, rect_.cy, 34, fg, 1.7))
+                out.append(icon(name, rect_.cx, rect_.cy, self.action_icon_size, fg, 1.7 if self.action_icon_size < 40 else 1.5))
                 continue
             out.append(icon(name, rect_.cx, rect_.y + 17, 21, fg, 1.9))
             label = L.ACTION_LABELS[name]
