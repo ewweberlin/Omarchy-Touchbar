@@ -80,13 +80,15 @@ SVG frames plus tiny-dfr's config. There is no bar widget.
 ### The Omarchy way
 
 ```sh
+sudo pacman -S tiny-dfr
 omarchy plugin add https://github.com/ewweberlin/Omarchy-Touchbar.git --enable
 cd ~/.config/omarchy/plugins/ewweberlin.touchbar
 bin/install
 ```
 
 Running `bin/install` from the cloned plugin directory is still required for the
-hook, udev rule and `/etc/tiny-dfr` permissions.
+hook, udev rule and `/etc/tiny-dfr` permissions. If you install `tiny-dfr` later,
+re-run `bin/install` afterwards.
 
 ### After installing tiny-dfr
 
