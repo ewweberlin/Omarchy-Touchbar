@@ -192,7 +192,8 @@ class Hyprland:
                 {
                     "address": client.get("address") or "",
                     "class": client.get("class") or client.get("initialClass") or "",
-                    "title": client.get("title") or "",
+                    # The title is deliberately not kept: it can contain private
+                    # document names, and nothing downstream may paint it.
                     "active": False,
                     "history": client.get("focusHistoryID", 999),
                 }

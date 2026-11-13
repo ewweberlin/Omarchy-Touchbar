@@ -83,17 +83,27 @@ class Strip:
 
     def refresh_windows(self, *, force: bool = False) -> None:
         icon_enabled = bool(self.settings.get("window_icons", True))
-        windows = tuple(
-            {
-                "address": window.get("address") or "",
-                "title": window.get("title") or window.get("class") or "Window",
-                "active": bool(window.get("active")),
-                "icon": self.icons.data_uri(window.get("class") or "")
-                if icon_enabled
-                else None,
-            }
-            for window in self.hypr.windows
-        )
+        windows = []
+        seen: dict[str, int] = {}
+        for window in self.hypr.windows:
+            app_class = window.get("class") or ""
+            app = self.icons.app_name(app_class)
+            seen[app] = seen.get(app, 0) + 1
+            windows.append(
+                {
+                    "address": window.get("address") or "",
+                    # App name only. Window titles can carry document names and
+                    # message subjects, and the rendered SVG is published
+                    # world-readable under /etc/tiny-dfr. The ordinal keeps
+                    # several windows of one app tellable apart.
+                    "app": app if seen[app] == 1 else f"{app} · {seen[app]}",
+                    "active": bool(window.get("active")),
+                    "icon": self.icons.data_uri(app_class)
+                    if icon_enabled
+                    else None,
+                }
+            )
+        windows = tuple(windows)
         if windows == self.windows and not force:
             return
         self.windows = windows

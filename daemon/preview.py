@@ -50,14 +50,14 @@ WORKSPACES = (
 )
 
 WINDOWS = (
-    ("chromium", "Omarchy · A Beautiful Way to Use Arch"),
-    ("foot", "OC | OmarchyTouchbar"),
-    ("org.gnome.Nautilus", "OmarchyTouchbar"),
-    ("md.obsidian.Obsidian", "AGENTS - Obsidian Vault"),
-    ("org.gnome.Calculator", "Calculator"),
-    ("code", "daemon/strip.py — OmarchyTouchbar"),
-    ("spotify", "Tokyo Night — Playlist"),
-    ("org.gnome.Loupe", "preview-home.png"),
+    "chromium",
+    "foot",
+    "org.gnome.Nautilus",
+    "md.obsidian.Obsidian",
+    "org.gnome.Calculator",
+    "code",
+    "spotify",
+    "org.gnome.Loupe",
 )
 
 
@@ -65,11 +65,11 @@ def window_cards(icons: IconResolver) -> tuple[dict, ...]:
     return tuple(
         {
             "address": f"0x{index:012x}",
-            "title": title,
+            "app": icons.app_name(app_class),
             "active": index == 0,
             "icon": icons.data_uri(app_class),
         }
-        for index, (app_class, title) in enumerate(WINDOWS)
+        for index, app_class in enumerate(WINDOWS)
     )
 
 

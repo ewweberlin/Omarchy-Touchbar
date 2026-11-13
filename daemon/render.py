@@ -530,16 +530,16 @@ class Renderer:
                 )
             else:
                 out.append(rect(icon_x - 14, card.cy - 14, 28, 28, p.raised, 7))
-                initial = (window.get("title") or "?").strip()[:1].upper()
+                initial = (window.get("app") or "?").strip()[:1].upper()
                 out.append(
                     text(icon_x, card.cy + 5, initial, 15, p.fg_bright, 600, "middle")
                 )
-            title_x = card.x + 48
+            label_x = card.x + 48
             out.append(
                 text(
-                    title_x,
+                    label_x,
                     card.cy + 4,
-                    ellipsize(window.get("title") or "", 11, card.right - title_x - 10),
+                    ellipsize(window.get("app") or "", 11, card.right - label_x - 10),
                     11,
                     p.fg_bright if active else p.fg,
                     500,

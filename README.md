@@ -21,8 +21,8 @@ nothing to style by hand.
 [![Controls drawer with brightness and volume sliders](docs/screenshots/controls.png)](docs/screenshots/controls.png)
 *Controls — brightness and volume side by side, with mute and close.*
 
-[![Window drawer with app icons](docs/screenshots/windows.png)](docs/screenshots/windows.png)
-*Windows — every window on the active workspace, with app icons.*
+[![Window drawer with app icons and app names](docs/screenshots/windows.png)](docs/screenshots/windows.png)
+*Windows — every window on the active workspace as an app card.*
 
 [![Vitals drawer with CPU, GPU, RAM, fan, network and disk](docs/screenshots/vitals.png)](docs/screenshots/vitals.png)
 *Vitals — CPU, GPU, RAM, fan, network, disk and free space.*
@@ -39,9 +39,10 @@ nothing to style by hand.
   block and a control strip.
 - **Workspaces** light up when occupied and follow Hyprland immediately through
   its event socket.
-- **Window drawer**: tap the active workspace to see every window on it with
-  its app icon. Tap a card to focus it, drag the row to scroll, tap outside or
-  wait eight seconds to close.
+- **Window drawer**: tap the active workspace to see every window on it as an
+  app card with icon and app name. Window titles are never painted, so private
+  document names cannot end up in the rendered SVG. Tap a card to focus it, drag
+  the row to scroll, tap outside or wait eight seconds to close.
 - **Controls drawer**: brightness and volume side-by-side, each with tick marks
   and a macOS-style percentage readout, plus a mute toggle.
 - **System vitals**: CPU temperature + usage, GPU clock + usage, RAM, fan and
@@ -178,7 +179,7 @@ Everything is optional. Create `~/.config/omarchy-touchbar/config.json`:
 | `slider_step` | Volume slider resolution, in percent. |
 | `workspace_count` | Workspaces shown (1–9; more would squeeze the actions). |
 | `workspace_first` | ID of the leftmost workspace. |
-| `window_icons` | Resolve app icons for the window drawer. |
+| `window_icons` | Resolve app icons for the window drawer; app names are drawn either way. |
 | `busy_seconds` | Sample every second for this long after the last touch. |
 | `sleep_seconds` | Stop sampling after this much idle time until the next touch. |
 | `font_family` | Font stack used inside the SVG. |
