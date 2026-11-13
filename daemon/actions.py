@@ -10,7 +10,23 @@ import subprocess
 import time
 from pathlib import Path
 
-BRIGHTNESS_DEVICE = "acpi_video0"
+def _pick_backlight() -> str:
+    # The panel backlight name differs between T2 models (acpi_video0 on some,
+    # intel_backlight on others). Skip the Touch Bar's own appletb_backlight.
+    base = Path("/sys/class/backlight")
+    for name in ("acpi_video0", "intel_backlight", "gmux_backlight"):
+        if (base / name).is_dir():
+            return name
+    try:
+        for entry in sorted(base.iterdir()):
+            if not entry.name.startswith("appletb"):
+                return entry.name
+    except OSError:
+        pass
+    return "acpi_video0"
+
+
+BRIGHTNESS_DEVICE = _pick_backlight()
 BRIGHTNESS_SYS = Path("/sys/class/backlight") / BRIGHTNESS_DEVICE
 
 

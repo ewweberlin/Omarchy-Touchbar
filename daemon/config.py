@@ -74,6 +74,8 @@ DEFAULT_SETTINGS: dict = {
     "invert_y": False,
     "swap_xy": False,
     "x_offset": 0,
+    # Stretch the digitizer's x range when it does not span the whole panel.
+    "x_scale": 1.0,
     "y_offset": 0,
     # Workspaces shown on the left.
     "workspace_count": 5,

@@ -273,7 +273,7 @@ class InputHub:
             fx = 1.0 - fx
         if s.get("invert_y"):
             fy = 1.0 - fy
-        x = fx * PANEL_W - CANVAS_X0 + float(s.get("x_offset") or 0)
+        x = fx * PANEL_W * float(s.get("x_scale") or 1.0) - CANVAS_X0 + float(s.get("x_offset") or 0)
         y = fy * CANVAS_H + float(s.get("y_offset") or 0)
         return x, max(0.0, min(CANVAS_H - 0.001, y))
 
