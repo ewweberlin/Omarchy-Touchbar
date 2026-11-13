@@ -78,7 +78,9 @@ class Daemon:
         self.palette = theme.load_palette()
         self.theme_sig = theme.theme_signature()
         self.refresh_sig = _stat_sig(config.REFRESH_FILE)
-        self.renderer = Renderer(self.palette, self.settings["font_family"])
+        self.renderer = Renderer(
+            self.palette, self.settings["font_family"], bool(self.settings.get("action_labels", True))
+        )
 
         self.stats = Stats()
         self.stats.refresh()
@@ -244,7 +246,9 @@ class Daemon:
         self.theme_sig = sig
         self.refresh_sig = refresh
         self.palette = theme.load_palette()
-        self.renderer = Renderer(self.palette, self.settings["font_family"])
+        self.renderer = Renderer(
+            self.palette, self.settings["font_family"], bool(self.settings.get("action_labels", True))
+        )
         self.strip.notify_theme()
         print("touchbar: theme changed", flush=True)
 

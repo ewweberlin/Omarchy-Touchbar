@@ -81,6 +81,8 @@ DEFAULT_SETTINGS: dict = {
     # Show the app icon on window cards (a little slower to build, much faster
     # to scan).
     "window_icons": True,
+    # Text labels under the quick-action icons. Off gives larger icons.
+    "action_labels": True,
     "font_family": "Adwaita Sans, Noto Sans, Liberation Sans, sans-serif",
     # How long the strip keeps sampling every second after the last touch
     # before dropping to a slow poll (and then stopping entirely).

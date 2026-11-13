@@ -173,7 +173,7 @@ def main(argv: list[str] | None = None) -> int:
     out = Path(args.out or "preview")
     out.mkdir(parents=True, exist_ok=True)
     palette = load_palette()
-    renderer = Renderer(palette, settings["font_family"])
+    renderer = Renderer(palette, settings["font_family"], bool(settings.get("action_labels", True)))
     icons = IconResolver()
 
     for name, model in models(icons).items():
