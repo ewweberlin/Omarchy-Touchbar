@@ -170,6 +170,7 @@ Everything is optional. Create `~/.config/omarchy-touchbar/config.json`:
   "invert_y": false,
   "swap_xy": false,
   "x_offset": 0,
+  "x_scale": 1.0,
   "y_offset": 0
 }
 ```
@@ -187,7 +188,7 @@ Everything is optional. Create `~/.config/omarchy-touchbar/config.json`:
 | `busy_seconds` | Sample every second for this long after the last touch. |
 | `sleep_seconds` | Stop sampling after this much idle time until the next touch. |
 | `font_family` | Font stack used inside the SVG. |
-| `invert_x`, `invert_y`, `swap_xy`, `x_offset`, `y_offset` | Touch calibration. |
+| `invert_x`, `invert_y`, `swap_xy`, `x_offset`, `x_scale`, `y_offset` | Touch calibration. |
 
 Restart the shell after editing the file:
 
@@ -206,6 +207,11 @@ right and canvas x maps `raw / max * 2170 - 91`. Try, one change at a time:
 {"invert_x": true}
 {"x_offset": 40}
 ```
+
+If taps are right on one end of the strip but drift further off towards the
+other, the digitizer does not span the whole panel. `x_scale` stretches the raw
+range before the offset is applied (canvas x = `raw / max * 2170 * x_scale - 91 + x_offset`).
+A MacBookPro16,2 needed `{"x_scale": 0.9074, "x_offset": 113.6}`.
 
 The offset is in canvas pixels after inversion, so `x_offset: 40` moves every
 touch 40 px to the right. `invert_y`, `swap_xy` and `y_offset` only matter on a
