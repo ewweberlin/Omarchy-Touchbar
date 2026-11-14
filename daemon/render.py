@@ -235,7 +235,7 @@ class Renderer:
         self,
         palette: Palette,
         font_family: str,
-        action_labels: bool = True,
+        action_labels: bool = False,
         action_icon_size: float = 34,
     ):
         self.p = palette

@@ -83,8 +83,9 @@ DEFAULT_SETTINGS: dict = {
     # Show the app icon on window cards (a little slower to build, much faster
     # to scan).
     "window_icons": True,
-    # Text labels under the quick-action icons. Off gives larger icons.
-    "action_labels": True,
+    # Text labels under the quick-action icons. Off by default: the icons get
+    # the whole cell, which is far easier to read on the strip.
+    "action_labels": False,
     # Icon size in px when action_labels is false (16-50).
     "action_icon_size": 34,
     "font_family": "Adwaita Sans, Noto Sans, Liberation Sans, sans-serif",

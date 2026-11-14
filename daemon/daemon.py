@@ -81,7 +81,7 @@ class Daemon:
         self.renderer = Renderer(
             self.palette,
             self.settings["font_family"],
-            bool(self.settings.get("action_labels", True)),
+            bool(self.settings.get("action_labels", False)),
             self.settings.get("action_icon_size", 34),
         )
 
@@ -252,7 +252,7 @@ class Daemon:
         self.renderer = Renderer(
             self.palette,
             self.settings["font_family"],
-            bool(self.settings.get("action_labels", True)),
+            bool(self.settings.get("action_labels", False)),
             self.settings.get("action_icon_size", 34),
         )
         self.strip.notify_theme()

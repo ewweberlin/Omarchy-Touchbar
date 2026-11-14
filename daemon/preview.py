@@ -125,7 +125,7 @@ def make_renderer(palette: Palette, settings: dict) -> Renderer:
     return Renderer(
         palette,
         settings["font_family"],
-        bool(settings.get("action_labels", True)),
+        bool(settings.get("action_labels", False)),
         settings.get("action_icon_size", 34),
     )
 
