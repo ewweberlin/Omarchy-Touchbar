@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "ewweberlin.touchbar",
   "name": "Touch Bar",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "author": "ewweberlin",
   "license": "MIT",
   "description": "Theme-aware control strip for Intel/T2 MacBook Touch Bars: workspaces, quick actions, live system vitals and macOS-style brightness/volume sliders. Rendered through tiny-dfr.",

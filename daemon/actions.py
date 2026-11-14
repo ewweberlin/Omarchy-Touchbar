@@ -10,6 +10,7 @@ import subprocess
 import time
 from pathlib import Path
 
+
 def _pick_backlight() -> str:
     # The panel backlight name differs between T2 models (acpi_video0 on some,
     # intel_backlight on others). Skip the Touch Bar's own appletb_backlight.
