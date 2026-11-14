@@ -18,7 +18,7 @@ from .config import CANVAS_H, CANVAS_W, load_settings
 from .icons import IconResolver
 from .render import Model, Renderer
 from .stats import Sample
-from .theme import load_palette
+from .theme import Palette, load_palette
 
 THEME_ROOTS = (
     Path("/usr/share/omarchy/themes"),
@@ -120,6 +120,16 @@ def theme_palettes() -> dict[str, Path]:
     return dict(sorted(found.items()))
 
 
+def make_renderer(palette: Palette, settings: dict) -> Renderer:
+    """Renderer configured from the same settings the daemon uses."""
+    return Renderer(
+        palette,
+        settings["font_family"],
+        bool(settings.get("action_labels", True)),
+        settings.get("action_icon_size", 34),
+    )
+
+
 def render_themes(out: Path, scale: float, settings: dict) -> int:
     home = models(IconResolver())["home"]
     out.mkdir(parents=True, exist_ok=True)
@@ -129,7 +139,7 @@ def render_themes(out: Path, scale: float, settings: dict) -> int:
         return 1
     with tempfile.TemporaryDirectory() as tmp:
         for slug, colors in palettes.items():
-            svg = Renderer(load_palette(colors), settings["font_family"]).render(home)
+            svg = make_renderer(load_palette(colors), settings).render(home)
             svg_path = Path(tmp) / f"{slug}.svg"
             svg_path.write_text(svg, encoding="utf-8")
             png_path = out / f"{slug}.png"
@@ -173,7 +183,7 @@ def main(argv: list[str] | None = None) -> int:
     out = Path(args.out or "preview")
     out.mkdir(parents=True, exist_ok=True)
     palette = load_palette()
-    renderer = Renderer(palette, settings["font_family"], bool(settings.get("action_labels", True)), settings.get("action_icon_size", 34))
+    renderer = make_renderer(palette, settings)
     icons = IconResolver()
 
     for name, model in models(icons).items():

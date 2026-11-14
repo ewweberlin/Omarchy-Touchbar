@@ -299,8 +299,11 @@ class Renderer:
             out.append(rect(rect_.x, rect_.y, rect_.w, rect_.h, fill, 10))
             fg = p.on_accent if pressed else p.fg
             if not self.action_labels:
-                # No label: the icon gets the whole cell.
-                out.append(icon(name, rect_.cx, rect_.cy, self.action_icon_size, fg, 1.7 if self.action_icon_size < 40 else 1.5))
+                # No label: the icon gets the whole cell. Thinner strokes from
+                # 40 px up keep the outline glyphs from looking heavy.
+                size = self.action_icon_size
+                stroke = 1.7 if size < 40 else 1.5
+                out.append(icon(name, rect_.cx, rect_.cy, size, fg, stroke))
                 continue
             out.append(icon(name, rect_.cx, rect_.y + 17, 21, fg, 1.9))
             label = L.ACTION_LABELS[name]
