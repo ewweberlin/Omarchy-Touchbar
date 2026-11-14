@@ -161,6 +161,8 @@ Everything is optional. Create `~/.config/omarchy-touchbar/config.json`:
   "workspace_count": 5,
   "workspace_first": 1,
   "window_icons": true,
+  "action_labels": true,
+  "action_icon_size": 34,
   "busy_seconds": 30,
   "sleep_seconds": 300,
   "font_family": "Adwaita Sans, Noto Sans, Liberation Sans, sans-serif",
@@ -180,6 +182,8 @@ Everything is optional. Create `~/.config/omarchy-touchbar/config.json`:
 | `workspace_count` | Workspaces shown (1–9; more would squeeze the actions). |
 | `workspace_first` | ID of the leftmost workspace. |
 | `window_icons` | Resolve app icons for the window drawer; app names are drawn either way. |
+| `action_labels` | Text labels under the quick-action icons. `false` drops them and draws the icons larger. |
+| `action_icon_size` | Icon size in px when `action_labels` is `false` (16–50, default 34). The 50 px cells still fit 50, since the glyphs fill about 75% of their box. |
 | `busy_seconds` | Sample every second for this long after the last touch. |
 | `sleep_seconds` | Stop sampling after this much idle time until the next touch. |
 | `font_family` | Font stack used inside the SVG. |

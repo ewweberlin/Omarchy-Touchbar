@@ -108,6 +108,8 @@ def text(
 _STROKE_ICONS: dict[str, tuple[str, ...]] = {
     "menu": ("M4 7.5h16", "M4 12h16", "M4 16.5h16"),
     "terminal": ("M5.2 8.2l3.8 3.8-3.8 3.8", "M11.6 16.2h7"),
+    # Holder arc and stand around the filled capsule in _FILL_ICONS.
+    "dictation": ("M6.6 11.4a5.4 5.4 0 0010.8 0", "M12 16.8v3.6", "M9 20.4h6"),
     "browser": (
         "M12 3.6a8.4 8.4 0 100 16.8 8.4 8.4 0 000-16.8Z",
         "M3.8 12h16.4",
@@ -229,9 +231,18 @@ def _fmt_clock(mhz: float | None) -> str:
 
 
 class Renderer:
-    def __init__(self, palette: Palette, font_family: str):
+    def __init__(
+        self,
+        palette: Palette,
+        font_family: str,
+        action_labels: bool = True,
+        action_icon_size: float = 34,
+    ):
         self.p = palette
         self.font = font_family
+        self.action_labels = action_labels
+        # Cells are 50 px tall; the glyphs fill ~75% of their box, so 50 still fits.
+        self.action_icon_size = max(16.0, min(50.0, float(action_icon_size)))
 
     # -- shared pieces -------------------------------------------------------
 
@@ -287,6 +298,10 @@ class Renderer:
             fill = p.accent if pressed else p.cell
             out.append(rect(rect_.x, rect_.y, rect_.w, rect_.h, fill, 10))
             fg = p.on_accent if pressed else p.fg
+            if not self.action_labels:
+                # No label: the icon gets the whole cell.
+                out.append(icon(name, rect_.cx, rect_.cy, self.action_icon_size, fg, 1.7 if self.action_icon_size < 40 else 1.5))
+                continue
             out.append(icon(name, rect_.cx, rect_.y + 17, 21, fg, 1.9))
             label = L.ACTION_LABELS[name]
             out.append(
